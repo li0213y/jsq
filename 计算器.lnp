@@ -1,0 +1,5 @@
+"¼ÆËãÆ÷.obj",
+"lcd1602.obj",
+"keyboard.obj" 
+TO "¼ÆËãÆ÷" 
+RAMSIZE(256) 

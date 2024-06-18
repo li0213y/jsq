@@ -1,0 +1,143 @@
+C51 COMPILER V9.01   计算器                                                                06/18/2024 19:03:44 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE 计算器
+OBJECT MODULE PLACED IN 计算器.OBJ
+COMPILER INVOKED BY: D:\下载\百度云\1. KEILC51软件\C51\BIN\C51.EXE 计算器.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          #include "reg52.h"
+   2          #include "string.h"
+   3          #include "stdio.h"
+   4          #include "lcd1602.h"
+   5          #include "keyboard.h"
+   6          
+   7          #define keydeng         14
+   8          #define keyzuoyi    12
+   9          long memory = 0; // 用于存储内存中的值
+  10          sbit k1=P3^0;    //?¨ò?P31?úê?k1
+  11          sbit k2=P3^1;    //?¨ò?P31?úê?k1
+  12          sbit k3=P3^2;    //?¨ò?P31?úê?k1
+  13          code unsigned char KeyDisPlaybuf[16] = 
+  14          {
+  15              '1', '2', '3', '+',\
+  16              '4', '5', '6', '-',\ 
+  17              '7', '8', '9', '*',\
+  18              '<', '0', '=', '/'
+  19          };
+  20          
+  21          long Count(char *ch, char len)//简单计算器 仅支持加减乘除+-*/
+  22          {
+  23   1          unsigned char i = 0;
+  24   1          char Operation;
+  25   1          long Num1=0,Num2=0;
+  26   1          while(i<len && ch[i]!='+' && ch[i]!='-' && ch[i]!='*' && ch[i]!='/')         //输入的数据 数值1
+  27   1          {
+  28   2              Num1*=10;
+  29   2              Num1+=ch[i]-'0';
+  30   2              i++;
+  31   2          }
+  32   1          Operation=ch[i++];
+  33   1          while(i<len && ch[i]!='=')     //输入的数据 数值2
+  34   1          {
+  35   2              Num2*=10;
+  36   2              Num2+=ch[i]-'0';
+  37   2              i++;
+  38   2          }
+  39   1          switch(Operation)      //计算
+  40   1          {
+  41   2              case'+':return Num1+Num2;//加法
+  42   2              case'-':return Num1-Num2;//减法
+  43   2              case'*':return Num1*Num2;//乘法
+  44   2              case'/':return Num1/Num2;//除法
+  45   2          }
+  46   1              return 0;
+  47   1      }
+  48          
+  49          void EasyCounter(void)  
+  50          {  
+  51   1          unsigned char buff[30];  
+  52   1          unsigned char text[30] = {0}; // 初始化text数组为全0  
+  53   1          unsigned char key;  
+  54   1          unsigned char i = 0;  
+  55   1          long tempResult; // 用于临时存储计算结果  
+C51 COMPILER V9.01   计算器                                                                06/18/2024 19:03:44 PAGE 2   
+
+  56   1        
+  57   1          do  
+  58   1          {  
+  59   2              key = keycan(); // 读取键值  
+  60   2        
+  61   2              if (key >= 0 && key < K1) // 如果是数字键或运算符键  
+*** ERROR C202 IN LINE 61 OF 计算器.C: 'K1': undefined identifier
+  62   2              {  
+  63   3                  text[i++] = KeyDisPlaybuf[key]; // 记录键值对应的字符  
+  64   3                  text[i] = '\0'; // 确保字符串以null结尾  
+  65   3                  LCD_ShowStr(0, 0, "                "); // 清除第一行显示  
+  66   3                  LCD_ShowStr(k1 - strlen(text), 0, text); // 第一行显示字符  
+  67   3              }  
+  68   2              else if (key == keyzuoyi && i > 0) // 按下"<"时删除一位  
+  69   2              {  
+  70   3                  i--; // 注意这里只减少索引，不删除实际的字符（因为字符串以null结尾）  
+  71   3                  text[i] = '\0'; // 确保字符串以null结尾  
+  72   3                  LCD_ShowStr(0, 0, "                "); // 清除第一行显示  
+  73   3                  LCD_ShowStr(k1 - strlen(text), 0, text); // 重新显示字符  
+  74   3              }  
+  75   2              else if (key == k1) // k1: M+  
+  76   2              {  
+  77   3                  memory += Count(text, strlen(text)); // 将当前表达式的值加到内存中  
+  78   3                  LCD_ShowStr(0, 1, "                "); // 清除第二行显示  
+  79   3                  sprintf(buff, "M: %ld", memory); // 格式化内存中的值到buff  
+  80   3                  LCD_ShowStr(0, 1, buff); // 第二行显示内存中的值  
+  81   3                  // 重置text以准备下一次输入  
+  82   3                  memset(text, 0, sizeof(text));  
+  83   3                  i = 0;  
+  84   3              }  
+  85   2              else if (key == k2) // k2: M-  
+  86   2              {  
+  87   3                  tempResult = Count(text, strlen(text)); // 计算当前表达式的值  
+  88   3                  if (tempResult < abs(memory)) // 防止内存值变为负数（简单处理）  
+  89   3                  {  
+  90   4                      memory -= tempResult; // 从内存中减去当前表达式的值  
+  91   4                  }  
+  92   3                  else  
+  93   3                  {  
+  94   4                      memory = 0; // 如果当前值大于内存值，则设置内存为0  
+  95   4                  }  
+  96   3                  LCD_ShowStr(0, 1, "                "); // 清除第二行显示  
+  97   3                  sprintf(buff, "M: %ld", memory); // 格式化内存中的值到buff  
+  98   3                  LCD_ShowStr(0, 1, buff); // 第二行显示内存中的值  
+  99   3                  // 重置text以准备下一次输入  
+ 100   3                  memset(text, 0, sizeof(text));  
+ 101   3                  i = 0;  
+ 102   3              }  
+ 103   2              else if (key == k3) // k3: RM  
+ 104   2              {  
+ 105   3                  memory = 0; // 清除内存中的值  
+ 106   3                  LCD_ShowStr(0, 1, "                "); // 清除第二行显示  
+ 107   3                  LCD_ShowStr(0, 1, "M: 0"); // 显示内存已清除  
+ 108   3                  // 重置text以准备下一次输入  
+ 109   3                  memset(text, 0, sizeof(text));  
+ 110   3                  i = 0;  
+ 111   3              }  
+ 112   2          } while (key != keydeng); // 按下'='时结束输入并进行计算  
+ 113   1        
+ 114   1          // 计算结果并显示  
+ 115   1          tempResult = Count(text, strlen(text));  
+ 116   1          sprintf(buff, "%ld", tempResult);  
+C51 COMPILER V9.01   计算器                                                                06/18/2024 19:03:44 PAGE 3   
+
+ 117   1          LCD_ShowStr(0, 1, "                "); // 清除第二行显示  
+ 118   1          LCD_ShowStr(k1 - strlen(buff), 1, buff); // 第二行显示计算结果  
+ 119   1      }
+ 120          void main(void) //主函数
+ 121          {
+ 122   1        LCD_Init();
+ 123   1        while(1)
+ 124   1        {
+ 125   2          EasyCounter();      //按键扫描+计算+显示
+ 126   2        }
+ 127   1      }
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  1 ERROR(S)
